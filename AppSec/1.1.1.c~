@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define COOKIE 27478
+#define COOKIE 0
 
 unsigned int practice(unsigned int cookie)
 {
