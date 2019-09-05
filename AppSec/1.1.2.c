@@ -26,7 +26,7 @@ void practice(unsigned int app, unsigned int sec, unsigned int mp)
 	return;
 }
 
-int _main()
+int main()
 {
 
 	your_asm_fn();

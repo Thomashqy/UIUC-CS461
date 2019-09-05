@@ -5,12 +5,19 @@ your_asm_fn:
 
 push	%ebp
 mov	%esp,%ebp
-push	$0xc001f00d
-mov	%esp,%eax
+
+xor	%eax,%eax
 push	%eax
-push	$0xc105ed
+push	$0x646f6f66
+push	$0x6c6f6f63
+mov	%esp,%eax
+push	$0x00c105ed
+push	%eax
+mov	4(%esp),%eax
+push	%eax
 push	$0xacce55ed
 call	practice
+
 
 leave
 ret

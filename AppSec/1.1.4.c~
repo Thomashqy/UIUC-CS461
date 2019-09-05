@@ -2,14 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-void practice(unsigned int app, unsigned int sec, unsigned int * mp)
+void practice(unsigned int app, unsigned int *sec, unsigned char *mp)
 {
-	if( *mp != 0xc001f00d)
+	if( strcmp(mp,"coolfood") != 0 )
 	{
-		printf("this mp isn't cool food\n");
+		printf("you think this mp is %s?\n",mp);
 		return;
 	}
-	if( sec != 0xc105ed)
+	if( *sec != 0xc105ed)
 	{
 		printf("wait, sec is not closed yet\n");
 		return;
@@ -19,15 +19,15 @@ void practice(unsigned int app, unsigned int sec, unsigned int * mp)
 		printf("app hasn't been accessed\n");
 		return;
 	}
+	
 
 	printf("Good job!\n");
 
 	return;
 }
 
-int main()
+int _main()
 {
-
 	your_asm_fn();
 
 	exit(0);

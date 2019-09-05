@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-void practice(unsigned int app, unsigned int sec, unsigned int * mp)
+void practice(unsigned int app, unsigned int sec, unsigned int mp)
 {
-	if( *mp != 0xc001f00d)
+	if( mp != 0xc001f00d)
 	{
 		printf("this mp isn't cool food\n");
 		return;
@@ -19,13 +19,14 @@ void practice(unsigned int app, unsigned int sec, unsigned int * mp)
 		printf("app hasn't been accessed\n");
 		return;
 	}
+	
 
 	printf("Good job!\n");
 
 	return;
 }
 
-int main()
+int _main()
 {
 
 	your_asm_fn();
