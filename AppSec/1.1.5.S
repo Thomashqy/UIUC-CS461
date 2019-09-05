@@ -1,7 +1,7 @@
-.global _main
+.global main
 .section .text
 
-_main:
+main:
 
 push	%ebp
 mov	%esp,%ebp
@@ -15,6 +15,5 @@ push   %ebx
 mov    %esp,%ecx
 mov    $0xb,%eax
 int    $0x80
-
 leave
 ret

@@ -1,11 +1,23 @@
-.global _main
+.global main
 .section .text
 
-_main:
+main:
 
 push	%ebp
 mov	%esp,%ebp
+xor    %eax,%eax
+push   %eax
+push   $0x0068732f
+push   $0x6e69622f
+mov    %esp,%ebx
+push   %eax
+push   %ebx
+mov    %esp,%ecx
+mov    $0xb,%eax
+int    $0x80
+<<<<<<< HEAD
 
-
+=======
+>>>>>>> 3ee7e36b55948432363616d0d54ec4df81709f36
 leave
 ret
