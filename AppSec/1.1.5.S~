@@ -1,7 +1,7 @@
-.global your_asm_fn
+.global _main
 .section .text
 
-your_asm_fn:
+_main:
 
 push	%ebp
 mov	%esp,%ebp
