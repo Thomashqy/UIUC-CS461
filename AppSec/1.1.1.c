@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define COOKIE 0
+
+#define COOKIE 27478
+
 unsigned int practice(unsigned int cookie)
 {
 	unsigned int hint1 = 0x1337;

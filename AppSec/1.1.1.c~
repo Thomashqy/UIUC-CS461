@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define COOKIE yhyuan2
+<<<<<<< HEAD
+#define COOKIE 0
+=======
+
+#define COOKIE 27478
+
+>>>>>>> a80f09e5928a6fb49d332e0190ccae042fd6aa22
 unsigned int practice(unsigned int cookie)
 {
 	unsigned int hint1 = 0x1337;
