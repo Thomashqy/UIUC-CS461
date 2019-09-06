@@ -1,7 +1,7 @@
-.global main
+.global _main
 .section .text
 
-main:
+_main:
 
 push	%ebp
 mov	%esp,%ebp

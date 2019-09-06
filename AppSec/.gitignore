@@ -1,4 +1,9 @@
-*.out
-*.o
-*.*.*.c~
-*.*.*.S~
+*
+!*.*.*.c
+!*.*.*.S
+!*.*.*.py
+!cookie
+!Makefile
+!setcookie
+!*.c
+!*.py

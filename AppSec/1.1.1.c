@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define COOKIE 27478
-
 unsigned int practice(unsigned int cookie)
 {
 	unsigned int hint1 = 0x1337;
@@ -14,7 +12,7 @@ unsigned int practice(unsigned int cookie)
 	return hint1;
 }
 
-int main()
+int _main()
 {
 #ifdef COOKIE
 	unsigned int result = practice(COOKIE);
