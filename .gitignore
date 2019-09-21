@@ -1,0 +1,15 @@
+*
+! *.*.*.c
+! *.*.*.S
+! *.*.*.py
+! cookie
+! Makefile
+! setcookie
+! *.c
+! *.py
+! *.tpl
+! *.py
+! *.txt
+! *.secret
+! *.html
+! .gitignore
