@@ -1,9 +1,0 @@
-*
-!*.*.*.c
-!*.*.*.S
-!*.*.*.py
-!cookie
-!Makefile
-!setcookie
-!*.c
-!*.py
