@@ -11,9 +11,9 @@ def connect():
     #TODO: fill out function parameters. Use the user/password combo for the user you created in 2.1.2.1
 
     return mdb.connect(host="localhost",
-                       user="",
-                       passwd="",
-                       db="");
+                       user="yhyuan2",
+                       passwd="1e24ee060d0c83ea906366778f013784670a9149411005bef8f2cedef3a1a634",
+                       db="project2");
 
 def createUser(username, password):
     """ creates a row in table named users
@@ -24,6 +24,7 @@ def createUser(username, password):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statement using cur.execute() so that this query creates a row in table user
+    cur.execute("INSERT INTO users VALUES (\'" + username + "\', \'" + password + "\', " + md5(password).digest() + ")")
     db_rw.commit()
 
 def validateUser(username, password):
@@ -36,6 +37,7 @@ def validateUser(username, password):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statement using cur.execute() so that this query selects a row from table user
+    cur.execute("SELECT * FROM users WHERE username = \'" + username + "\' AND password = \'" + password + "\'")
     if cur.rowcount < 1:
         return False
     return True
@@ -52,6 +54,8 @@ def fetchUser(username):
     cur = db_rw.cursor(mdb.cursors.DictCursor)
     print username
     #TODO: Implement a prepared statement so that this query selects a id and username of the row which has column username = username
+    cur.execute("SELECT id, username FROM users WHERE username = \'" + username + "\'")
+	
     if cur.rowcount < 1:
         return None
     return FormsDict(cur.fetchone())
@@ -65,6 +69,7 @@ def addHistory(user_id, query):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statment using cur.execute() so that this query inserts a row in table history
+    cur.execute("INSERT INTO history VALUES (" + user_id + ", \'" + query + "\')")
     db_rw.commit()
 
 def getHistory(user_id):
@@ -77,5 +82,6 @@ def getHistory(user_id):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statement using cur.execute() so that this query selects 15 queries from table history in descending order of when the searches were made
+    cur.execute("SELECT query FROM history ORDER BY id DESC LIMIT 15")
     rows = cur.fetchall();
     return [row[0] for row in rows]

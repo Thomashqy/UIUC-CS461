@@ -1,4 +1,4 @@
-import re, os
+import re, os, random
 from bottle import FormsDict, HTTPError
 from hashlib import md5
 
@@ -26,7 +26,9 @@ class XSSEncodeAngles(object):
     @staticmethod
     def filter(user_input):
         #TODO: complete this filter definition
-        return user_input	
+		user_input = user_input.replace("<", "&lt;")
+		user_input = user_input.replace(">", "&gt;")
+		return user_input
 
 ############################################################
 # CSRF Defenses
@@ -54,6 +56,9 @@ class CSRFToken(object):
         token = request.get_cookie("csrf_token")
 
         #TODO: implement Token validation
+        #if token is None:
+        #    token = '%32x' % random.randrange(16**32)
+        #response.set_cookie("csrf_token", token)
 
         return token
     @staticmethod
@@ -62,7 +67,7 @@ class CSRFToken(object):
     @staticmethod
     def validate(request, token):
         if request.forms.get('csrf_token') != token:
-            raise HTTPError(403, "CSRF Attack Detected (bad or missing token)")        
+            raise HTTPError(403, "CSRF Attack Detected (bad or missing token)")
 
 ############################################################
 
