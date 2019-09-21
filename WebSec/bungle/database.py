@@ -24,7 +24,7 @@ def createUser(username, password):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statement using cur.execute() so that this query creates a row in table user
-    cur.execute("INSERT INTO users VALUES (\'" + username + "\', \'" + password + "\', " + md5(password).digest() + ")")
+    cur.execute("INSERT INTO users (username, password, passwordhash) VALUES (\'" + username + "\', \'" + password + "\', \'" + md5(password).hexdigest() + "\')")
     db_rw.commit()
 
 def validateUser(username, password):
@@ -69,7 +69,7 @@ def addHistory(user_id, query):
     db_rw = connect()
     cur = db_rw.cursor()
     #TODO: Implement a prepared statment using cur.execute() so that this query inserts a row in table history
-    cur.execute("INSERT INTO history VALUES (" + user_id + ", \'" + query + "\')")
+    cur.execute("INSERT INTO history (user_id, query) VALUES (" + user_id + ", \'" + query + "\')")
     db_rw.commit()
 
 def getHistory(user_id):
