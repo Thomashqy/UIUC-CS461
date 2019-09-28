@@ -12,4 +12,5 @@
 ! *.txt
 ! *.secret
 ! *.html
+! *.tar.gz
 ! .gitignore
