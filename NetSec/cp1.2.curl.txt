@@ -1,18 +1,13 @@
-> GET / HTTP/1.1
-> Host: www.bankofbailey.com
-> User-Agent: curl/7.58.0
-> Accept: */*
-> 
-< HTTP/1.1 200 OK
-< Server: nginx/1.15.10
-< Date: Sat, 26 Oct 2019 22:11:17 GMT
-< Content-Type: text/html
-< Content-Length: 45
-< Last-Modified: Fri, 29 Mar 2019 17:10:46 GMT
-< Connection: keep-alive
-< ETag: "5c9e5196-2d"
-< Cache-Control: no-cache
-< Set-Cookie: session=6SKA0DBR83BFSBI0
-< Accept-Ranges: bytes
-< 
+HTTP/1.1 200 OK
+Server: nginx/1.15.10
+Date: Sat, 26 Oct 2019 22:11:17 GMT
+Content-Type: text/html
+Content-Length: 45
+Last-Modified: Fri, 29 Mar 2019 17:10:46 GMT
+Connection: keep-alive
+ETag: "5c9e5196-2d"
+Cache-Control: no-cache
+Set-Cookie: session=6SKA0DBR83BFSBI0
+Accept-Ranges: bytes
+
 <html><body><h1>It works!</h1></body></html>
