@@ -66,7 +66,6 @@ def interceptor(packet):
 					del packet[IP].chksum
 					del packet[IP].len
 			packet[Ether].dst = clientMAC
-			packet.show2(dump=True)
 		elif packet[IP].dst == serverIP:
 			packet[Ether].dst = serverMAC
 		packet[Ether].src = attackerMAC

