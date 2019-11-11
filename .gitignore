@@ -1,16 +1,16 @@
 *
-! *.*.*.c
-! *.*.*.S
-! *.*.*.py
-! cookie
-! Makefile
-! setcookie
-! *.c
-! *.py
-! *.tpl
-! *.py
-! *.txt
-! *.secret
-! *.html
-! *.tar.gz
-! .gitignore
+!cookie
+!Makefile
+!setcookie
+!*.c
+!*.S
+!*.py
+!*.tpl
+!*.hex
+!*.cer
+!*.asc
+!*.txt
+!*.secret
+!*.html
+!*.tar.gz
+!.gitignore
